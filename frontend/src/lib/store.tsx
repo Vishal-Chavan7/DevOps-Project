@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { api, type ApiUser } from "./api";
-import { BLOGS, type Author, type Blog } from "./mock-data";
+import type { Author, Blog } from "./mock-data";
 
 const AUTH_KEY = "chronicle.auth.v1";
 
@@ -70,7 +70,7 @@ function upsertBlog(list: Blog[], blog: Blog): Blog[] {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [blogs, setBlogs] = useState<Blog[]>(BLOGS);
+  const [blogs, setBlogs] = useState<Blog[]>([]);
   const [auth, setAuth] = useState<AuthState>({ user: null, token: null });
   const [hydrated, setHydrated] = useState(false);
   const [blogsLoading, setBlogsLoading] = useState(true);
@@ -92,7 +92,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     api
       .listBlogs()
       .then((data) => setBlogs(data as Blog[]))
-      .catch(() => setBlogs(BLOGS))
+      .catch(() => setBlogs([]))
       .finally(() => setBlogsLoading(false));
   }, [hydrated]);
 
@@ -152,21 +152,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getBlogBySlug = useCallback((slug: string) => blogs.find((b) => b.slug === slug), [blogs]);
 
-  const loadBlogBySlug = useCallback(
-    async (slug: string) => {
-      const cached = blogs.find((b) => b.slug === slug);
-      if (cached) return cached;
-
-      try {
-        const blog = (await api.getBlog(slug)) as Blog;
-        setBlogs((prev) => upsertBlog(prev, blog));
-        return blog;
-      } catch {
-        return undefined;
-      }
-    },
-    [blogs],
-  );
+  const loadBlogBySlug = useCallback(async (slug: string) => {
+    try {
+      const blog = (await api.getBlog(slug)) as Blog;
+      setBlogs((prev) => upsertBlog(prev, blog));
+      return blog;
+    } catch {
+      return undefined;
+    }
+  }, []);
 
   const addComment = useCallback(async (blogId: string, content: string) => {
     if (!auth.user) throw new Error("Not authenticated");
