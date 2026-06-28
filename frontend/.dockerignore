@@ -1,0 +1,11 @@
+node_modules
+.output
+.vinxi
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+*.log
+dist
+build
