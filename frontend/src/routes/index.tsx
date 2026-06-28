@@ -18,11 +18,34 @@ export const Route = createFileRoute("/")({
 });
 
 function LandingPage() {
-  const { blogs } = useApp();
+  const { blogs, blogsLoading } = useApp();
   const featured = blogs[0];
   const rest = blogs.slice(1, 4);
 
-  if (!featured) return null;
+  if (blogsLoading) {
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-32 text-center text-muted-foreground">
+        Loading stories…
+      </div>
+    );
+  }
+
+  if (!featured) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 py-32 text-center">
+        <h1 className="font-serif text-5xl md:text-6xl">Chronicle</h1>
+        <p className="mt-4 text-lg text-muted-foreground">
+          A home for thoughtful writing. Publish the first story.
+        </p>
+        <Link
+          to="/editor/new"
+          className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
+        >
+          Write a story <ArrowRight className="size-4" />
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <>

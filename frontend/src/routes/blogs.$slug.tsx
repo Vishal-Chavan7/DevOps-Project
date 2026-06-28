@@ -30,18 +30,15 @@ function BlogDetail() {
   const { getBlogBySlug, loadBlogBySlug, blogs, user, addComment, deleteBlog } = useApp();
   const navigate = useNavigate();
   const [comment, setComment] = useState("");
-  const [blog, setBlog] = useState(() => getBlogBySlug(slug));
-  const [loading, setLoading] = useState(!getBlogBySlug(slug));
-
-  useEffect(() => {
-    const cached = getBlogBySlug(slug);
-    if (cached) setBlog(cached);
-  }, [blogs, slug, getBlogBySlug]);
+  const [blog, setBlog] = useState<ReturnType<typeof getBlogBySlug>>();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
+      setLoading(true);
+
       const cached = getBlogBySlug(slug);
       if (cached) {
         setBlog(cached);
@@ -49,7 +46,6 @@ function BlogDetail() {
         return;
       }
 
-      setLoading(true);
       const fetched = await loadBlogBySlug(slug);
       if (!cancelled) {
         setBlog(fetched);
@@ -62,7 +58,13 @@ function BlogDetail() {
     return () => {
       cancelled = true;
     };
-  }, [slug, getBlogBySlug, loadBlogBySlug]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reload when slug changes
+  }, [slug]);
+
+  useEffect(() => {
+    const cached = getBlogBySlug(slug);
+    if (cached) setBlog(cached);
+  }, [blogs, slug, getBlogBySlug]);
 
   if (loading) {
     return (
@@ -191,7 +193,6 @@ function BlogDetail() {
           ))}
         </div>
 
-        {/* Author card */}
         <Link
           to="/profile"
           className="mt-16 flex items-start gap-4 rounded-2xl border border-border bg-surface p-6 transition-colors hover:border-accent/40"
@@ -208,7 +209,6 @@ function BlogDetail() {
           </div>
         </Link>
 
-        {/* Comments */}
         <section className="mt-16">
           <h3 className="mb-6 flex items-center gap-2 font-serif text-2xl">
             <MessageCircle className="size-5 text-accent" />
@@ -264,7 +264,6 @@ function BlogDetail() {
         </section>
       </div>
 
-      {/* Related */}
       {related.length > 0 && (
         <section className="mx-auto max-w-7xl px-6 py-20 border-t border-border">
           <h3 className="mb-12 font-serif text-3xl">Related stories</h3>
