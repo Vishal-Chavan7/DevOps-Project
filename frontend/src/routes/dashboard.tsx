@@ -32,10 +32,14 @@ function Dashboard() {
 
   const mine = blogs.filter((b) => b.authorId === user.id);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Delete this story?")) return;
-    deleteBlog(id);
-    toast.success("Story deleted");
+    try {
+      await deleteBlog(id);
+      toast.success("Story deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete story");
+    }
   };
 
   return (

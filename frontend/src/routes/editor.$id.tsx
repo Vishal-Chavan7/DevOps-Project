@@ -33,19 +33,23 @@ function EditEditor() {
   }
 
   const onSubmit = async (v: BlogFormValues) => {
-    updateBlog(blog.id, {
-      title: v.title,
-      excerpt: v.excerpt,
-      coverImage: v.coverImage,
-      category: v.category,
-      tags: v.tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
-      content: v.content,
-    });
-    toast.success("Story updated");
-    navigate({ to: "/blogs/$slug", params: { slug: blog.slug } });
+    try {
+      const updated = await updateBlog(blog.id, {
+        title: v.title,
+        excerpt: v.excerpt,
+        coverImage: v.coverImage,
+        category: v.category,
+        tags: v.tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        content: v.content,
+      });
+      toast.success("Story updated");
+      navigate({ to: "/blogs/$slug", params: { slug: updated.slug } });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update story");
+    }
   };
 
   return (

@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-ro
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { Pencil, Trash2, MessageCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useApp } from "@/lib/store";
 import { BlogCard } from "@/components/blog-card";
@@ -27,25 +27,69 @@ export const Route = createFileRoute("/blogs/$slug")({
 
 function BlogDetail() {
   const { slug } = Route.useParams();
-  const { getBlogBySlug, blogs, user, addComment, deleteBlog } = useApp();
+  const { getBlogBySlug, loadBlogBySlug, blogs, user, addComment, deleteBlog } = useApp();
   const navigate = useNavigate();
   const [comment, setComment] = useState("");
+  const [blog, setBlog] = useState(() => getBlogBySlug(slug));
+  const [loading, setLoading] = useState(!getBlogBySlug(slug));
 
-  const blog = getBlogBySlug(slug);
+  useEffect(() => {
+    const cached = getBlogBySlug(slug);
+    if (cached) setBlog(cached);
+  }, [blogs, slug, getBlogBySlug]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      const cached = getBlogBySlug(slug);
+      if (cached) {
+        setBlog(cached);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      const fetched = await loadBlogBySlug(slug);
+      if (!cancelled) {
+        setBlog(fetched);
+        setLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, getBlogBySlug, loadBlogBySlug]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 py-32 text-center text-muted-foreground">
+        Loading story…
+      </div>
+    );
+  }
+
   if (!blog) throw notFound();
 
   const related = blogs.filter((b) => b.id !== blog.id && b.category === blog.category).slice(0, 3);
 
   const isOwner = user?.id === blog.authorId;
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!confirm("Delete this story permanently?")) return;
-    deleteBlog(blog.id);
-    toast.success("Story deleted");
-    navigate({ to: "/blogs" });
+    try {
+      await deleteBlog(blog.id);
+      toast.success("Story deleted");
+      navigate({ to: "/blogs" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete story");
+    }
   };
 
-  const handleComment = (e: React.FormEvent) => {
+  const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
       toast.error("Sign in to comment");
@@ -53,9 +97,14 @@ function BlogDetail() {
       return;
     }
     if (!comment.trim()) return;
-    addComment(blog.id, comment.trim());
-    setComment("");
-    toast.success("Comment posted");
+    try {
+      const updated = await addComment(blog.id, comment.trim());
+      setBlog(updated);
+      setComment("");
+      toast.success("Comment posted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to post comment");
+    }
   };
 
   return (
